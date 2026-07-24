@@ -1,8 +1,15 @@
-ربات تلگرامی قیمت لحظه‌ای تتر (USDT/IRT) از صرافی Bitpin — به‌روزرسانی خودکار هر ۱۵ دقیقه، پاسخ inline در هر چت، و ارسال به کانال.
+**ربات تلگرامی قیمت لحظه‌ای تتر (USDT/IRT) از صرافی Bitpin** به‌روزرسانی خودکار هر ۱۵ دقیقه، پاسخ inline در هر چت، و ارسال به کانال.
 
-## اجرا
+### نیازمندی‌ها
 
-نیازمند Node.js ≥ 20، pnpm، و یک Redis در حال اجرا.
+- Node.js نسخه ۲۰ یا بالاتر
+- pnpm
+- Redis در حال اجرا
+- Nginx (برای تنظیم Webhook تلگرام)
+
+---
+
+### اجرا
 
 ```bash
 pnpm install
@@ -10,22 +17,16 @@ cp .env.example .env
 pnpm dev
 ```
 
-برای پروداکشن:
+**برای پروداکشن:**
 
 ```bash
 pnpm build
 pnpm start
 ```
 
-مقادیر لازم در `.env`: `BOT_TOKEN`, `CHANNEL_ID`, `ADMIN_ID`, `WEBHOOK_URL`.
-
-## استقرار دائمی (PM2)
-
-بلوک `deploy/nginx-tether-watch.conf` را داخل `server{}` دامنه‌ات بگذار، سپس:
+### استقرار دائمی (PM2)
 
 ```bash
-sudo systemctl enable --now redis-server
-sudo nginx -t && sudo systemctl reload nginx
 sudo npm install -g pm2
 pnpm build
 pm2 start ecosystem.config.cjs
@@ -33,3 +34,8 @@ pm2 startup
 pm2 save
 pm2 logs tether-watch --lines 30
 ```
+
+### تنظیم Webhook تلگرام
+
+**حتما** برای تنظیم Webhook باید از Nginx استفاده کنید.  
+یعنی پورت اپلیکیشن را با Nginx به صورت Reverse Proxy تنظیم کنید تا تلگرام بتواند درخواست‌ها را به درستی دریافت کند.
