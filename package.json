@@ -1,0 +1,36 @@
+{
+  "name": "tether-watch",
+  "version": "1.0.0",
+  "description": "Telegram bot that reports live USDT/IRT price from Bitpin (TypeScript port, grammY)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "biome check --write .",
+    "check": "tsc --noEmit && eslint ."
+  },
+  "dependencies": {
+    "croner": "^10.0.1",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.10.0",
+    "grammy": "^1.45.1",
+    "ioredis": "^5.11.1",
+    "pino": "^10.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.3",
+    "eslint": "^10.7.0",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0"
+  }
+}
