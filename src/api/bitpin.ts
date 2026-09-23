@@ -1,65 +1,40 @@
 import { z } from "zod";
 import { config } from "../config.js";
-import { formatNumber, formatTehranTime } from "../utils/format.js";
+import { fetchJson } from "./http.js";
+import type { Ticker } from "./types.js";
 
 /**
- * Bitpin ticker client + message formatting — the port of `src/api/bitpin.py`.
- * Numeric fields are coerced (the API returns them as strings) and validated
- * with zod so a shape change surfaces a clean error instead of a runtime crash.
+ * Bitpin ticker client. `GET /api/v1/mkt/tickers/` returns every market;
+ * numeric fields arrive as strings, so they are coerced and validated with
+ * zod — a shape change surfaces as a clean error instead of a runtime crash.
  */
-const TickerSchema = z
-  .object({
-    symbol: z.string(),
-    price: z.coerce.number(),
-    high: z.coerce.number(),
-    low: z.coerce.number(),
-    daily_change_price: z.coerce.number(),
-    timestamp: z.coerce.number().optional(),
-  })
-  .passthrough();
+const SYMBOL = "USDT_IRT";
 
-const TickersSchema = z.array(TickerSchema);
+// Only `symbol` is checked across the whole list; the full shape is validated
+// on the one entry we use, so an odd unrelated market can't break the parse.
+const TickersSchema = z.array(z.object({ symbol: z.string() }).passthrough());
 
-export type Ticker = z.infer<typeof TickerSchema>;
+const TickerSchema = z.object({
+  symbol: z.string(),
+  price: z.coerce.number(),
+  high: z.coerce.number(),
+  low: z.coerce.number(),
+  daily_change_price: z.coerce.number(),
+});
 
-export async function getTickers(): Promise<Ticker[]> {
-  const response = await fetch(config.apiBaseUrl);
-  if (!response.ok) {
-    throw new Error(`Bitpin API error: ${response.status} ${response.statusText}`);
+export async function getBitpinUsdtTicker(): Promise<Ticker> {
+  const tickers = TickersSchema.parse(await fetchJson(config.priceApi.bitpinUrl, "Bitpin"));
+  const raw = tickers.find((ticker) => ticker.symbol === SYMBOL);
+  if (!raw) {
+    throw new Error(`${SYMBOL} not found in Bitpin tickers`);
   }
-  const data: unknown = await response.json();
-  return TickersSchema.parse(data);
-}
-
-export async function getUsdtPrice(): Promise<Ticker> {
-  const tickers = await getTickers();
-  const usdt = tickers.find((ticker) => ticker.symbol === "USDT_IRT");
-  if (!usdt) {
-    throw new Error("USDT_IRT not found in tickers");
-  }
-  return usdt;
-}
-
-/**
- * Faithful port of `format_combined_message`. When `scheduledTime` is omitted it
- * falls back to the current wall-clock time in the configured timezone.
- */
-export function formatCombinedMessage(ticker: Ticker, scheduledTime?: string): string {
-  const price = formatNumber(ticker.price);
-  const high = formatNumber(ticker.high);
-  const low = formatNumber(ticker.low);
-
-  const changePercent = ticker.daily_change_price;
-  const direction = changePercent > 0 ? "افزایشی" : "کاهشی";
-  const changeAbs = Math.abs(changePercent).toFixed(2);
-
-  const displayTime = scheduledTime ?? formatTehranTime();
-
-  return `💵 قیمت تتر: ${price} تومان
-
-⬆️ بالاترین قیمت: ${high} تومان
-⬇️ پایین‌ترین قیمت: ${low} تومان
-📊 درصد تغییرات امروز: ${changeAbs}% ${direction}
-
-🕒 آخرین به‌روزرسانی: ${displayTime}`;
+  const ticker = TickerSchema.parse(raw);
+  return {
+    source: "bitpin",
+    symbol: ticker.symbol,
+    price: ticker.price,
+    high: ticker.high,
+    low: ticker.low,
+    changePercent: ticker.daily_change_price,
+  };
 }

@@ -1,24 +1,23 @@
 import { type Bot, InlineKeyboard, InlineQueryResultBuilder } from "grammy";
-import { type Ticker, formatCombinedMessage, getUsdtPrice } from "../api/bitpin.js";
+import {
+  type CachedPrice,
+  formatCombinedMessage,
+  getUsdtPrice,
+  PRICE_CACHE_KEY,
+  type Ticker,
+} from "../api/price.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
 import { sendPriceToChannel } from "../scheduler/jobs.js";
 import { formatNumber, formatTehranTime, getTehranParts } from "../utils/format.js";
 import { getCache } from "../utils/redis.js";
 
-/** Shape stored in Redis under `current_price` (see scheduler/jobs.ts). */
-interface CachedPrice {
-  ticker: Ticker;
-  timestamp: number;
-  scheduled_time?: string;
-}
-
 const INTRO_TEXT =
   'هر <b>15 دقیقه</b> <b>قیمت لحظه‌ای</b> <b>USDT</b> از <b>صرافی‌های معتبر ایرانی</b> دریافت و نمایش داده می‌شود. جهت نمایش قیمت می‌توانید از دکمه "<b>دریافت قیمت لحظه‌ای</b>" استفاده کنید.';
 
 /** Load the ticker from Redis, or fall back to a fresh API fetch. */
 async function loadTicker(): Promise<Ticker> {
-  const cached = await getCache<CachedPrice>("current_price");
+  const cached = await getCache<CachedPrice>(PRICE_CACHE_KEY);
   if (cached) {
     logger.info("Using cached price from Redis");
     return cached.ticker;
@@ -130,14 +129,14 @@ export function setupHandlers(bot: Bot): void {
   bot.on("inline_query", async (ctx) => {
     logger.info(`Inline query received: ${ctx.inlineQuery.query} from user ${ctx.from?.id}`);
     try {
-      const cached = await getCache<CachedPrice>("current_price");
+      const cached = await getCache<CachedPrice>(PRICE_CACHE_KEY);
       const ticker = cached ? cached.ticker : await getUsdtPrice();
       const displayTime = cached?.scheduled_time ?? formatTehranTime();
 
       const priceDisplay = formatNumber(ticker.price);
       const highDisplay = formatNumber(ticker.high);
       const lowDisplay = formatNumber(ticker.low);
-      const changePercent = ticker.daily_change_price;
+      const changePercent = ticker.changePercent;
       const direction = changePercent > 0 ? "افزایشی" : "کاهشی";
       const changeAbs = Math.abs(changePercent).toFixed(2);
 

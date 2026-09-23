@@ -1,18 +1,17 @@
 import { Cron } from "croner";
-import { type Ticker, formatCombinedMessage, getUsdtPrice } from "../api/bitpin.js";
+import {
+  type CachedPrice,
+  formatCombinedMessage,
+  getUsdtPrice,
+  PRICE_CACHE_KEY,
+} from "../api/price.js";
 import { bot } from "../bot/bot.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
 import { formatTehranTime } from "../utils/format.js";
 import { getCache, setCache } from "../utils/redis.js";
 
-interface CachedPrice {
-  ticker: Ticker;
-  timestamp: number;
-  scheduled_time: string;
-}
-
-/** Fetch the USDT price and cache it in Redis (port of `update_price_in_redis`). */
+/** Fetch the USDT price from the configured provider and cache it in Redis. */
 export async function updatePriceInRedis(): Promise<void> {
   try {
     const usdtTicker = await getUsdtPrice();
@@ -25,9 +24,9 @@ export async function updatePriceInRedis(): Promise<void> {
       scheduled_time: scheduledTime,
     };
 
-    await setCache("current_price", priceData, config.redisExpiryMinutes * 60);
+    await setCache(PRICE_CACHE_KEY, priceData, config.redisExpiryMinutes * 60);
     logger.info(
-      `Price updated in Redis at ${scheduledTime} (expires in ${config.redisExpiryMinutes} minutes)`,
+      `Price updated in Redis from ${usdtTicker.source} at ${scheduledTime} (expires in ${config.redisExpiryMinutes} minutes)`,
     );
   } catch (error) {
     logger.error({ err: error }, "Error updating price in Redis");
@@ -40,7 +39,7 @@ export async function updatePriceInRedis(): Promise<void> {
  * Throws on failure so callers (e.g. the admin button) can report success/error.
  */
 export async function sendPriceToChannel(): Promise<void> {
-  const cached = await getCache<CachedPrice>("current_price");
+  const cached = await getCache<CachedPrice>(PRICE_CACHE_KEY);
   const ticker = cached ? cached.ticker : await getUsdtPrice();
   const scheduledTime = cached?.scheduled_time;
 

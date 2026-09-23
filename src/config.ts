@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
+import { PRICE_PROVIDERS } from "./api/types.js";
 
 /**
  * Typed, validated configuration — replaces the scattered `os.getenv(...)` calls
@@ -22,7 +23,12 @@ const EnvSchema = z.object({
   WEBAPP_HOST: z.string().default("127.0.0.3"),
   WEBAPP_PORT: z.coerce.number().int().default(8443),
 
-  API_BASE_URL: z.string().url().default("https://api.bitpin.org/api/v1/mkt/tickers/"),
+  // Which exchange to read the USDT/Toman price from.
+  PRICE_PROVIDER: z.enum(PRICE_PROVIDERS).default("bitpin"),
+  BITPIN_API_URL: z.string().url().optional(),
+  // Deprecated alias of BITPIN_API_URL, still honoured for existing .env files.
+  API_BASE_URL: z.string().url().optional(),
+  WALLEX_API_URL: z.string().url().default("https://api.wallex.ir/hector/web/v1/markets"),
 
   REDIS_UPDATE_INTERVAL_MINUTES: z.coerce.number().int().default(14),
   CHANNEL_SEND_INTERVAL_MINUTES: z.coerce.number().int().default(15),
@@ -59,7 +65,12 @@ export const config = {
     port: env.WEBAPP_PORT,
   },
 
-  apiBaseUrl: env.API_BASE_URL,
+  priceProvider: env.PRICE_PROVIDER,
+  priceApi: {
+    bitpinUrl:
+      env.BITPIN_API_URL ?? env.API_BASE_URL ?? "https://api.bitpin.org/api/v1/mkt/tickers/",
+    wallexUrl: env.WALLEX_API_URL,
+  },
 
   redisExpiryMinutes: env.REDIS_EXPIRY_MINUTES,
 

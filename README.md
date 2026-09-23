@@ -1,10 +1,10 @@
 # TetherWatch
 
-Telegram bot that reports the **live USDT/IRT price** from the **Bitpin** exchange. The price is refreshed automatically in the background, available instantly via inline queries in any chat, and posted on a schedule to a Telegram channel.
+Telegram bot that reports the **live USDT/IRT price** from the **Bitpin** or **Wallex** exchange. The price is refreshed automatically in the background, available instantly via inline queries in any chat, and posted on a schedule to a Telegram channel.
 
 ## Features
 
-- Live USDT/IRT price sourced from the Bitpin API
+- Live USDT/IRT price sourced from the Bitpin or Wallex API — pick one with `PRICE_PROVIDER`
 - Automatic background price refresh (default: every ~15 minutes, configurable)
 - Inline query support — get the price in any chat by typing `@YourBotUsername`
 - Scheduled price broadcast to a Telegram channel
@@ -78,8 +78,10 @@ pnpm start
 | `WEBHOOK_PATH`                   | Path appended to `WEBHOOK_URL`; also the local Fastify route              | `/`                                                |
 | `WEBAPP_HOST`                    | Host/IP the internal Fastify server binds to                              | `127.0.0.1`                                       |
 | `WEBAPP_PORT`                    | Port the internal Fastify server listens on                               | `8443`                                            |
-| `API_BASE_URL`                   | Bitpin ticker API endpoint                                                 | `https://api.bitpin.org/api/v1/mkt/tickers/`      |
-| `REDIS_UPDATE_INTERVAL_MINUTES`  | How often the price cache is refreshed from Bitpin                        | `14`                                               |
+| `PRICE_PROVIDER`                 | Exchange to read the USDT/Toman price from: `bitpin` or `wallex`          | `bitpin`                                          |
+| `BITPIN_API_URL`                 | Bitpin ticker API endpoint (`API_BASE_URL` is still accepted as an alias) | `https://api.bitpin.org/api/v1/mkt/tickers/`      |
+| `WALLEX_API_URL`                 | Wallex markets API endpoint (public, no API key needed)                   | `https://api.wallex.ir/hector/web/v1/markets`     |
+| `REDIS_UPDATE_INTERVAL_MINUTES`  | How often the price cache is refreshed from the price provider            | `14`                                               |
 | `CHANNEL_SEND_INTERVAL_MINUTES`  | How often the price is posted to the Telegram channel                     | `15`                                               |
 | `REDIS_EXPIRY_MINUTES`           | TTL, in minutes, applied to the cached price                              | `30`                                               |
 | `TIMEZONE`                       | Timezone used for scheduling                                              | `Asia/Tehran`                                     |
@@ -159,7 +161,11 @@ With this setup, Telegram sends updates to `https://example.com/twatch`; Nginx t
 ```
 src/
 ├── api/
-│   └── bitpin.ts        # Bitpin API client
+│   ├── price.ts          # Provider-agnostic entry point (picks Bitpin/Wallex via PRICE_PROVIDER)
+│   ├── bitpin.ts         # Bitpin API client
+│   ├── wallex.ts         # Wallex API client
+│   ├── http.ts           # Shared JSON fetch helper (with timeout)
+│   └── types.ts          # Normalized Ticker type
 ├── bot/
 │   ├── bot.ts            # grammY bot instance & setup
 │   └── handlers.ts       # Command / inline query handlers
