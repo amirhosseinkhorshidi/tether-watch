@@ -9,10 +9,16 @@ const client = new Redis({
   host: config.redis.host,
   port: config.redis.port,
   db: config.redis.db,
+  password: config.redis.password,
+  keyPrefix: config.redis.prefix ? `${config.redis.prefix}:` : undefined,
   lazyConnect: false,
 });
 
-export async function setCache(key: string, value: unknown, expirySeconds?: number): Promise<void> {
+export async function setCache(
+  key: string,
+  value: unknown,
+  expirySeconds: number = config.redis.defaultTimeout,
+): Promise<void> {
   const payload = JSON.stringify(value);
   if (expirySeconds) {
     await client.set(key, payload, "EX", expirySeconds);

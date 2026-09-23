@@ -13,6 +13,9 @@ const EnvSchema = z.object({
   REDIS_HOST: z.string().default("localhost"),
   REDIS_PORT: z.coerce.number().int().default(6379),
   REDIS_DB: z.coerce.number().int().default(0),
+  REDIS_PASSWORD: z.string().default(""),
+  REDIS_PREFIX: z.string().default(""),
+  REDIS_DEFAULT_TIMEOUT: z.coerce.number().int().default(300),
 
   WEBHOOK_URL: z.string().url(),
   WEBHOOK_PATH: z.string().min(1),
@@ -44,6 +47,9 @@ export const config = {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
     db: env.REDIS_DB,
+    password: env.REDIS_PASSWORD || undefined,
+    prefix: env.REDIS_PREFIX,
+    defaultTimeout: env.REDIS_DEFAULT_TIMEOUT,
   },
 
   webhook: {
