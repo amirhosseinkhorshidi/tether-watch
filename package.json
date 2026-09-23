@@ -1,6 +1,6 @@
 {
   "name": "tether-watch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Telegram bot that reports live USDT/IRT price from Bitpin (TypeScript port, grammY)",
   "type": "module",
   "engines": {

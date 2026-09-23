@@ -6,7 +6,7 @@ module.exports = {
     {
       name: "tether-watch",
       script: "dist/main.js",
-      cwd: "/var/www/html/tether_watch",
+      cwd: "/var/www/tether-watch",
 
       // IMPORTANT: single fork instance — the app owns cron jobs (croner).
       // Cluster / multiple instances would fire the scheduler N times and
